@@ -1,18 +1,23 @@
 import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import { Pressable, VirtualizedList } from 'react-native';
 import { useNodesContext } from '../nodes-context-provider';
-import { Node } from './types';
+import { INode } from './types';
 
 export interface IProps {
-  getChildrenName: (item: Node) => string;
-  node: Node;
+  getChildrenName: (item: INode) => string;
+  node: INode;
   level: number;
-  onNodePressed?: (item: Node) => void;
-  renderNode: (item: Node, level: number, isLastLevel: boolean) => ReactElement;
-  renderChildrenNode?: (item: Node) => ReactElement;
+  onNodePressed?: (item: INode) => void;
+  renderNode: (
+    item: INode,
+    level: number,
+    isLastLevel: boolean,
+  ) => ReactElement;
+  renderChildrenNode?: (item: INode) => ReactElement;
   extraData?: any;
   keepOpenedState?: boolean;
   initialNumToRender?: number;
+  onScroll?: (item: INode) => void;
 }
 
 const NodeView: React.FC<IProps> = React.memo(
@@ -25,9 +30,10 @@ const NodeView: React.FC<IProps> = React.memo(
     onNodePressed,
     keepOpenedState,
     initialNumToRender,
+    onScroll
   }) => {
     const { openedNodes, setOpenNode } = useNodesContext();
-    const [_node, setNode]: [Node, any] = useState({
+    const [_node, setNode]: [INode, any] = useState({
       ...node,
       opened:
         keepOpenedState && openedNodes[node._internalId]
@@ -44,11 +50,10 @@ const NodeView: React.FC<IProps> = React.memo(
 
     const _onNodePressed = useCallback(() => {
       if (keepOpenedState) {
-        setOpenNode &&
-          setOpenNode({
-            internalId: _node._internalId,
-            opened: !_node.opened,
-          });
+        setOpenNode({
+          internalId: _node._internalId,
+          opened: !_node.opened,
+        });
       }
 
       setNode({
@@ -62,7 +67,7 @@ const NodeView: React.FC<IProps> = React.memo(
     }, [_node, keepOpenedState, onNodePressed, setOpenNode]);
 
     const renderChildren = useCallback(
-      (item: Node, _level: number): ReactElement => (
+      (item: INode, _level: number): ReactElement => (
         <NodeView
           getChildrenName={getChildrenName}
           node={item}
@@ -77,15 +82,15 @@ const NodeView: React.FC<IProps> = React.memo(
     );
 
     const renderItem = useCallback(
-      ({ item }: { item: Node }) => renderChildren(item, level),
+      ({ item }: { item: INode }) => renderChildren(item, level),
       [renderChildren, level],
     );
 
     const getItem = useCallback((data, index) => data && data[index], []);
 
-    const getItemCount = useCallback((data) => data?.length, []);
+    const getItemCount = useCallback((data) => data?.length ?? 0, []);
 
-    const keyExtractor = useCallback((item: Node) => item._internalId, []);
+    const keyExtractor = useCallback((item: INode) => item._internalId, []);
 
     const nodeChildrenName = getChildrenName(_node);
     const nodeChildren: [] = _node[nodeChildrenName];
@@ -102,6 +107,12 @@ const NodeView: React.FC<IProps> = React.memo(
         ) : null}
         {isNodeOpened && nodeChildren ? (
           <VirtualizedList
+            onScroll={(event: any) => {
+              const scrolling = event.nativeEvent.contentOffset.y;
+              if(onScroll){
+                onScroll(scrolling)
+              }
+            }}
             data={nodeChildren}
             getItemCount={getItemCount}
             getItem={getItem}

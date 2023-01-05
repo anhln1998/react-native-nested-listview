@@ -1,7 +1,7 @@
 import hashObjectGenerator from 'object-hash';
 import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Node, NodeView } from '../node-view';
+import { INode, NodeView } from '../node-view';
 import { NodeProvider } from '../nodes-context-provider';
 
 const styles = StyleSheet.create({
@@ -23,12 +23,17 @@ const styles = StyleSheet.create({
 export interface IProps {
   data: any;
   extraData?: any;
-  renderNode: (item: Node, level: number, isLastLevel: boolean) => ReactElement;
-  onNodePressed?: (item: Node) => void;
-  getChildrenName?: (item: Node) => string;
+  renderNode: (
+    item: INode,
+    level: number,
+    isLastLevel: boolean,
+  ) => ReactElement;
+  onNodePressed?: (item: INode) => void;
+  getChildrenName?: (item: INode) => string;
   style?: StyleSheet;
   keepOpenedState?: boolean;
   initialNumToRender?: number;
+  onScroll?: (item: INode) => void;
 }
 
 const DEFAULT_CHILDREN_NAME = 'items';
@@ -39,7 +44,7 @@ const defaultRootNode = {
   name: 'root',
   opened: true,
   hidden: true,
-} as Node;
+} as INode;
 
 const NestedListView: React.FC<IProps> = React.memo(
   ({
@@ -50,9 +55,10 @@ const NestedListView: React.FC<IProps> = React.memo(
     extraData,
     keepOpenedState,
     initialNumToRender,
+    onScroll
   }: IProps) => {
     const generateIds = useCallback(
-      (node?: Node) => {
+      (node?: INode) => {
         if (!node) {
           return {
             _internalId: '',
@@ -72,7 +78,7 @@ const NestedListView: React.FC<IProps> = React.memo(
               (key: string) => children[key],
             );
           }
-          copyNode[childrenName] = children.map((_: Node, index: number) =>
+          copyNode[childrenName] = children.map((_: INode, index: number) =>
             generateIds(children[index]),
           );
         }
@@ -82,19 +88,21 @@ const NestedListView: React.FC<IProps> = React.memo(
           delete copyNode._internalId;
         }
 
-        copyNode._internalId = hashObjectGenerator(copyNode, {
-          algorithm: 'passthrough',
-          unorderedSets: false,
-          unorderedObjects: false,
-        });
+        copyNode._internalId = keepOpenedState
+          ? hashObjectGenerator(copyNode, {
+              algorithm: 'passthrough',
+              unorderedSets: false,
+              unorderedObjects: false,
+            })
+          : Math.random().toString(36).substring(2, 10);
 
         return copyNode;
       },
-      [getChildrenName],
+      [getChildrenName, keepOpenedState],
     );
 
     const generateRootNode = useCallback(
-      (props: IProps): Node => {
+      (props: IProps): INode => {
         return {
           _internalId: 'root',
           items: props.data
@@ -108,7 +116,7 @@ const NestedListView: React.FC<IProps> = React.memo(
       [generateIds],
     );
 
-    const [_root, setRoot]: [Node, (_rootNode: Node) => void] =
+    const [_root, setRoot]: [INode, (_rootNode: INode) => void] =
       useState(defaultRootNode);
 
     useEffect(() => {
@@ -131,7 +139,7 @@ const NestedListView: React.FC<IProps> = React.memo(
     ]);
 
     const _getChildrenName = useCallback(
-      (node: Node) => {
+      (node: INode) => {
         if (node.name === 'root') {
           return 'items';
         }
@@ -168,6 +176,7 @@ const NestedListView: React.FC<IProps> = React.memo(
           extraData={extraData}
           keepOpenedState={keepOpenedState}
           initialNumToRender={initialNumToRender}
+          onScroll={onScroll}
         />
       </NodeProvider>
     );
