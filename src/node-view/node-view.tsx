@@ -18,6 +18,7 @@ export interface IProps {
   keepOpenedState?: boolean;
   initialNumToRender?: number;
   onScroll?: (item: INode) => void;
+  style?: StyleSheet;
 }
 
 const NodeView: React.FC<IProps> = React.memo(
@@ -30,7 +31,8 @@ const NodeView: React.FC<IProps> = React.memo(
     onNodePressed,
     keepOpenedState,
     initialNumToRender,
-    onScroll
+    onScroll,
+    style
   }) => {
     const { openedNodes, setOpenNode } = useNodesContext();
     const [_node, setNode]: [INode, any] = useState({
@@ -121,6 +123,7 @@ const NodeView: React.FC<IProps> = React.memo(
             keyExtractor={keyExtractor}
             listKey={node._internalId}
             initialNumToRender={initialNumToRender}
+            style={style}
           />
         ) : null}
       </>

@@ -55,7 +55,8 @@ const NestedListView: React.FC<IProps> = React.memo(
     extraData,
     keepOpenedState,
     initialNumToRender,
-    onScroll
+    onScroll,
+    style
   }: IProps) => {
     const generateIds = useCallback(
       (node?: INode) => {
@@ -177,6 +178,7 @@ const NestedListView: React.FC<IProps> = React.memo(
           keepOpenedState={keepOpenedState}
           initialNumToRender={initialNumToRender}
           onScroll={onScroll}
+          style={style}
         />
       </NodeProvider>
     );
